@@ -1,0 +1,127 @@
+<nav class="breadcrumb" aria-label="Ruta">
+  <a href="/admin/resellers">Revendedores</a> <span aria-hidden="true">/</span> <span><%= reseller.name %></span>
+</nav>
+
+<div class="page-head">
+  <div class="page-head__title">
+    <h1 class="page-title"><%= reseller.name %></h1>
+    <span class="badge <%= helpers.badgeClass(reseller.status) %>"><%= helpers.statusLabel(reseller.status) %></span>
+    <span class="muted small">Moneda <%= reseller.currency %></span>
+  </div>
+  <div class="page-head__actions">
+    <div class="balance-chip">
+      <span class="balance-chip__label">Saldo disponible</span>
+      <strong><%= balance ? helpers.formatCop(balance.availableMinor) : '—' %></strong>
+    </div>
+    <a class="btn btn--primary" href="/wallet?resellerId=<%= reseller.id %>#agregar-saldo">Agregar saldo</a>
+  </div>
+  <% if (nextStatuses && nextStatuses.length > 0) { %>
+    <form method="post" action="/admin/resellers/<%= reseller.id %>/status" class="form form--inline">
+      <input type="hidden" name="csrfToken" value="<%= csrfToken %>" />
+      <div class="field">
+        <label for="status">Cambiar estado</label>
+        <select id="status" name="status" required>
+          <% nextStatuses.forEach(function (item) { %>
+            <option value="<%= item %>"><%= helpers.statusLabel(item) %></option>
+          <% }); %>
+        </select>
+      </div>
+      <button type="submit" class="btn btn--secondary" data-loading><span class="btn__label">Actualizar</span></button>
+    </form>
+  <% } else { %>
+    <p class="muted small">Sin cambios de estado disponibles desde <strong><%= helpers.statusLabel(reseller.status) %></strong>.</p>
+  <% } %>
+</div>
+
+<section class="section">
+  <h2 class="section__title">Accesos</h2>
+  <% if (!users || users.length === 0) { %>
+    <div class="alert alert--error" role="alert">Este revendedor no tiene acceso: aún no existe ningún usuario. Crea el primero con un email y una contraseña temporal.</div>
+  <% } else { %>
+    <ul class="row-list">
+      <% users.forEach(function (u) { %>
+        <li class="row-list__item">
+          <div class="row-list__main">
+            <span class="row-list__title"><%= u.email %></span>
+            <span class="badge <%= helpers.badgeClass(u.status) %>"><%= helpers.statusLabel(u.status) %></span>
+          </div>
+          <div class="row-list__meta">
+            <span><%= helpers.domainLabel(u.role) %></span>
+            <span>Último ingreso: <%= helpers.formatDateTime(u.last_login_at) %></span>
+            <span>Creado: <%= helpers.formatDate(u.created_at) %></span>
+          </div>
+        </li>
+      <% }); %>
+    </ul>
+  <% } %>
+  <details class="advanced" <%= !users || users.length === 0 ? 'open' : '' %>>
+    <summary>Agregar usuario</summary>
+    <form method="post" action="/admin/resellers/<%= reseller.id %>/users" class="form">
+      <input type="hidden" name="csrfToken" value="<%= csrfToken %>" />
+      <div class="field">
+        <label for="userEmail">Email</label>
+        <input id="userEmail" name="email" type="email" required maxlength="254" autocomplete="off" value="<%= form && form.email ? form.email : '' %>" />
+      </div>
+      <div class="field">
+        <label for="userPassword">Contraseña inicial</label>
+        <input id="userPassword" name="password" type="password" required minlength="12" autocomplete="new-password" />
+      </div>
+      <button type="submit" class="btn btn--secondary" data-loading><span class="btn__label">Crear usuario</span></button>
+      <p class="muted small">Mínimo 12 caracteres. No se vuelve a mostrar; compártela por un canal seguro.</p>
+    </form>
+  </details>
+</section>
+
+<section class="section">
+  <h2 class="section__title">Sitios</h2>
+  <% if (sites.length === 0) { %>
+    <p class="empty muted">Sin sitios asignados. Asigna uno para habilitar su catálogo.</p>
+  <% } else { %>
+    <ul class="row-list">
+      <% sites.forEach(function (site) { %>
+        <li class="row-list__item">
+          <div class="row-list__main">
+            <span class="row-list__title"><%= site.name %></span>
+            <span class="badge <%= helpers.badgeClass(site.status) %>"><%= helpers.statusLabel(site.status) %></span>
+          </div>
+          <div class="row-list__meta">
+            <span>Grupo Ruijie: <code><%= site.ruijie_group_id %></code></span>
+          </div>
+          <form method="post" action="/admin/resellers/<%= reseller.id %>/sites/<%= site.id %>/unassign" class="inline-form row-list__action" data-confirm="¿Retirar la asignación?">
+            <input type="hidden" name="csrfToken" value="<%= csrfToken %>" />
+            <button type="submit" class="btn btn--danger" aria-label="Retirar sitio <%= site.name %>">Retirar</button>
+          </form>
+        </li>
+      <% }); %>
+    </ul>
+  <% } %>
+  <% if (availableSites.length > 0) { %>
+    <details class="advanced">
+      <summary>Asignar sitio</summary>
+      <form method="post" action="/admin/resellers/<%= reseller.id %>/sites" class="form">
+        <input type="hidden" name="csrfToken" value="<%= csrfToken %>" />
+        <div class="field">
+          <label for="siteId">Sitio</label>
+          <select id="siteId" name="siteId" required>
+            <option value="">Selecciona un sitio</option>
+            <% availableSites.forEach(function (site) { %>
+              <option value="<%= site.id %>"><%= site.name %></option>
+            <% }); %>
+          </select>
+        </div>
+        <button type="submit" class="btn btn--secondary" data-loading><span class="btn__label">Asignar</span></button>
+      </form>
+    </details>
+  <% } %>
+</section>
+
+<section class="danger-zone">
+  <div>
+    <h2 class="danger-zone__title">Eliminar revendedor</h2>
+    <p class="muted small">Elimina su acceso y lo oculta del panel. El historial financiero se conserva.</p>
+  </div>
+  <form method="post" action="/admin/resellers/<%= reseller.id %>/delete" class="inline-form" data-confirm="¿Eliminar este revendedor? Perderá el acceso inmediatamente.">
+    <input type="hidden" name="csrfToken" value="<%= csrfToken %>" />
+    <button type="submit" class="btn btn--danger" data-loading><span class="btn__label">Eliminar revendedor</span></button>
+  </form>
+</section>

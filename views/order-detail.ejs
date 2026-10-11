@@ -1,0 +1,65 @@
+<nav class="breadcrumb" aria-label="Ruta">
+  <a href="/orders">Ordenes</a> <span aria-hidden="true">/</span> <span>Detalle</span>
+</nav>
+
+<h1 class="page-title">Orden <span class="muted small"><code><%= order.id %></code></span></h1>
+<p>
+  <span class="badge <%= helpers.badgeClass(order.status) %>"><%= helpers.domainLabel(order.status) %></span>
+  <span class="muted"><%= order.quantity %> bono(s) · <%= helpers.formatCop(order.totalMinor) %> total</span>
+</p>
+
+<section class="card">
+  <h2 class="card__title">Resumen</h2>
+  <dl class="detail-list">
+    <div><dt>Precio unitario</dt><dd><%= helpers.formatCop(order.unitPriceMinor) %></dd></div>
+    <div><dt>Cantidad emitida</dt><dd><%= order.issuedQuantity %> / <%= order.quantity %></dd></div>
+    <div><dt>Referencia interna</dt><dd><code><%= order.localReference %></code></dd></div>
+    <div><dt>Referencia cliente</dt><dd><%= order.clientReference || '—' %></dd></div>
+    <div><dt>Creada</dt><dd><%= helpers.formatDateTime(order.createdAt) %></dd></div>
+    <% if (order.failureReason) { %>
+      <div><dt>Fallo</dt><dd><%= helpers.failureLabel(order.failureReason) %></dd></div>
+    <% } %>
+  </dl>
+</section>
+
+<section class="card" data-reveal-scope data-csrf="<%= csrfToken %>">
+  <h2 class="card__title">Bonos</h2>
+  <% if (!vouchersAvailable) { %>
+    <p class="empty muted">Los bonos estarán disponibles cuando la emisión se complete. Estamos verificando el resultado. No vuelvas a intentarlo.</p>
+  <% } else if (vouchers.length === 0) { %>
+    <p class="empty muted">Aún no hay bonos guardados para esta orden.</p>
+  <% } else { %>
+    <ul class="voucher-list">
+      <% vouchers.forEach(function (voucher) { %>
+        <li class="voucher-list__item">
+          <output class="code-block" data-code><%= voucher.masked %></output>
+          <span class="badge <%= helpers.badgeClass(voucher.status) %>"><%= helpers.domainLabel(voucher.status) %></span>
+          <div class="actions">
+            <button type="button" class="btn btn--secondary"
+                    data-reveal data-voucher-id="<%= voucher.id %>"
+                    data-url="/orders/<%= order.id %>/vouchers/<%= voucher.id %>/reveal">Revelar</button>
+            <button type="button" class="btn btn--ghost" data-copy disabled>Copiar</button>
+          </div>
+        </li>
+      <% }); %>
+    </ul>
+    <p class="muted small">Revelar y copiar quedan auditados. No se generan ticket, CSV, QR, correo ni mensajeria.</p>
+  <% } %>
+</section>
+
+<section class="card">
+  <h2 class="card__title">Trazabilidad</h2>
+  <% if (events.length === 0) { %>
+    <p class="empty muted">Sin eventos registrados.</p>
+  <% } else { %>
+    <ol class="timeline">
+      <% events.forEach(function (event) { %>
+        <li class="timeline__item">
+          <span class="badge <%= helpers.badgeClass(event.to_status) %>"><%= helpers.domainLabel(event.to_status) %></span>
+          <span class="muted"><%= event.from_status ? helpers.domainLabel(event.from_status) + ' \u2192 ' : '' %><%= helpers.domainLabel(event.event_type) %></span>
+          <time datetime="<%= event.created_at %>"><%= helpers.formatDateTime(event.created_at) %></time>
+        </li>
+      <% }); %>
+    </ol>
+  <% } %>
+</section>

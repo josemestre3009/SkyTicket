@@ -1,0 +1,25 @@
+<nav class="breadcrumb" aria-label="Ruta">
+  <a href="/dashboard">Panel</a> <span aria-hidden="true">/</span> <span>Ordenes</span>
+</nav>
+<h1 class="page-title">Historial de órdenes</h1>
+
+<section class="card">
+  <div class="card__head">
+    <form method="get" action="/orders" class="form form--inline">
+      <div class="field">
+        <label for="status">Estado</label>
+        <select id="status" name="status" data-auto-submit>
+          <option value="">Todos</option>
+          <% statuses.forEach(function (item) { %>
+            <option value="<%= item %>" <%= status === item ? 'selected' : '' %>><%= helpers.domainLabel(item) %></option>
+          <% }); %>
+        </select>
+      </div>
+      <noscript><button type="submit" class="btn btn--secondary">Filtrar</button></noscript>
+    </form>
+    <% if (variant === 'reseller') { %>
+      <a class="btn btn--primary" href="/orders/new">Nueva emisión</a>
+    <% } %>
+  </div>
+  <%- await include('partials/order-list', { orders: orders }) %>
+</section>

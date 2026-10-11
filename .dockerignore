@@ -1,0 +1,28 @@
+# Local secrets and environment
+.env
+.env.*
+!.env.example
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Node artifacts
+node_modules
+npm-debug.log*
+npm-*.log
+coverage
+.nyc_output
+
+# Editor / OS
+.vscode
+.idea
+*.swp
+.DS_Store
+Thumbs.db
+
+# Local data
+*.local
+tmp
+.docker

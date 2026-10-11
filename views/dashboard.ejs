@@ -1,0 +1,166 @@
+<% if (variant === 'admin') { %>
+  <div class="page-head admin-dashboard">
+    <div>
+      <h1 class="page-title">Resumen del negocio</h1>
+      <p class="muted"><%= summary && summary.period && summary.period.label ? summary.period.label : 'Últimos 30 días' %></p>
+    </div>
+  </div>
+
+  <section class="card finance-summary" aria-labelledby="finance-title">
+    <h2 class="card__title" id="finance-title">Dinero del período</h2>
+    <% if (summary) { %>
+      <div class="business-stats">
+        <article class="business-stat">
+          <span class="business-stat__label">Ventas emitidas</span>
+          <strong class="business-stat__value"><%= helpers.formatCop(summary.revenueMinor) %></strong>
+          <span class="business-stat__detail muted">Ingreso ganado por los bonos emitidos.</span>
+        </article>
+        <article class="business-stat">
+          <span class="business-stat__label">Recargas recibidas</span>
+          <strong class="business-stat__value"><%= helpers.formatCop(summary.rechargeMinor) %></strong>
+          <span class="business-stat__detail muted">Dinero agregado a los saldos de los revendedores.</span>
+        </article>
+        <article class="business-stat">
+          <span class="business-stat__label">Saldo de revendedores</span>
+          <strong class="business-stat__value"><%= helpers.formatCop(summary.circulatingBalanceMinor) %></strong>
+          <span class="business-stat__detail muted">Dinero todavía disponible o reservado para compras. Es una obligación con el revendedor, no una ganancia.</span>
+        </article>
+      </div>
+      <p class="muted small">Las recargas y el saldo disponible no son ganancia: representan dinero recibido y aún comprometido en bonos.</p>
+    <% } else { %>
+      <%- await include('partials/skeleton') %>
+    <% } %>
+  </section>
+
+  <section class="card operation-summary" aria-labelledby="operation-title">
+    <h2 class="card__title" id="operation-title">Operación del período</h2>
+    <% if (operation) { %>
+      <div class="business-stats">
+        <article class="business-stat">
+          <span class="business-stat__label">Ventas emitidas</span>
+          <strong class="business-stat__value"><%= operation.salesCount %></strong>
+          <span class="business-stat__detail muted">Órdenes emitidas.</span>
+        </article>
+        <article class="business-stat">
+          <span class="business-stat__label">Bonos emitidos</span>
+          <strong class="business-stat__value"><%= operation.vouchersIssued %></strong>
+          <span class="business-stat__detail muted">Bonos Wi-Fi entregados.</span>
+        </article>
+        <article class="business-stat">
+          <span class="business-stat__label">Tasa de éxito</span>
+          <strong class="business-stat__value"><%= operation.successPercent %></strong>
+          <span class="business-stat__detail muted">
+            <% if (operation.successResolved > 0) { %>
+              <%= operation.salesCount %> emitidas de <%= operation.successResolved %> resueltas.
+            <% } else { %>
+              Sin órdenes resueltas en el período.
+            <% } %>
+          </span>
+        </article>
+        <article class="business-stat">
+          <span class="business-stat__label">Revendedores activos</span>
+          <strong class="business-stat__value"><%= operation.activeResellers %></strong>
+          <span class="business-stat__detail muted">Cuentas activas sin archivar.</span>
+        </article>
+      </div>
+      <p class="muted small">La tasa de éxito compara las órdenes emitidas con el total resuelto (emitidas, fallidas y en verificación).</p>
+    <% } else { %>
+      <%- await include('partials/skeleton') %>
+    <% } %>
+  </section>
+
+  <section class="card recharge-panel" id="agregar-saldo" aria-labelledby="recharge-title">
+    <h2 class="card__title" id="recharge-title">Agregar saldo por correo</h2>
+    <p class="muted small">Se buscará el usuario por su correo y se acreditará el saldo al revendedor asociado. La recarga se confirma al enviar el formulario.</p>
+    <form method="post" action="/admin/dashboard/recharge-by-email" class="form">
+      <input type="hidden" name="csrfToken" value="<%= csrfToken %>" />
+      <input type="hidden" name="idempotencyKey" value="<%= typeof idempotencyKey !== 'undefined' && idempotencyKey ? idempotencyKey : '' %>" />
+      <div class="field">
+        <label for="recharge-email">Correo del revendedor</label>
+        <input id="recharge-email" name="email" type="email" required maxlength="254" autocomplete="off" value="<%= form && form.email ? form.email : '' %>" />
+      </div>
+      <div class="field">
+        <label for="recharge-amount">Monto (COP)</label>
+        <input id="recharge-amount" name="amountMinor" type="number" min="1" step="1" required inputmode="numeric" value="<%= form && form.amountMinor ? form.amountMinor : '' %>" />
+      </div>
+      <div class="field">
+        <label for="recharge-reference">Referencia (opcional)</label>
+        <input id="recharge-reference" name="reference" type="text" maxlength="120" value="<%= form && form.reference ? form.reference : '' %>" />
+      </div>
+      <div class="field">
+        <label for="recharge-reason">Motivo</label>
+        <input id="recharge-reason" name="reason" type="text" required maxlength="200" value="<%= form && form.reason ? form.reason : '' %>" />
+      </div>
+      <button type="submit" class="btn btn--primary" data-loading><span class="btn__label">Agregar saldo</span></button>
+    </form>
+  </section>
+
+  <section class="card" aria-labelledby="ranking-title">
+    <div class="card__head">
+      <h2 class="card__title" id="ranking-title">Gasto por revendedor</h2>
+      <span class="count"><%= ranking && ranking.length ? ranking.length : 0 %></span>
+    </div>
+    <% if (!ranking || ranking.length === 0) { %>
+      <p class="empty muted">Aún no hay gasto de revendedores en el período. Cuando emitan bonos, su gasto aparecerá aquí.</p>
+      <div class="actions">
+        <a class="btn btn--secondary" href="/admin/resellers">Ver revendedores</a>
+      </div>
+    <% } else { %>
+      <ul class="ranking">
+        <% ranking.forEach(function (item) { %>
+          <li class="ranking__row">
+            <div class="ranking__head">
+              <span class="ranking__name"><%= item.name %></span>
+              <% if (item.status) { %><span class="badge <%= helpers.badgeClass(item.status) %>"><%= helpers.statusLabel(item.status) %></span><% } %>
+            </div>
+            <% if (item.primaryEmail) { %>
+              <div class="ranking__email muted"><%= item.primaryEmail %></div>
+            <% } %>
+            <dl class="ranking__stats">
+              <div><dt>Gasto del período</dt><dd><%= helpers.formatCop(item.revenueMinor) %></dd></div>
+              <div><dt>Ventas</dt><dd><%= item.salesCount %></dd></div>
+              <div><dt>Bonos emitidos</dt><dd><%= item.vouchersIssued %></dd></div>
+              <div><dt>Saldo actual</dt><dd><%= helpers.formatCop(item.currentBalanceMinor) %></dd></div>
+              <div><dt>Recargas del período</dt><dd><%= helpers.formatCop(item.rechargeMinor) %></dd></div>
+              <div><dt>Última recarga</dt><dd><%= helpers.formatDateTime(item.lastRechargeAt) %></dd></div>
+            </dl>
+            <a class="btn btn--secondary ranking__cta" href="/admin/resellers/<%= item.id %>" aria-label="Gestionar a <%= item.name %>">Gestionar</a>
+          </li>
+        <% }); %>
+      </ul>
+    <% } %>
+  </section>
+
+  <section class="card">
+    <div class="card__head">
+      <h2 class="card__title">Órdenes recientes</h2>
+      <a class="btn btn--ghost" href="/admin/orders">Ver todas</a>
+    </div>
+    <%- await include('partials/order-list', { orders: recentOrders }) %>
+  </section>
+<% } else { %>
+  <h1 class="page-title">Hola, tu resumen</h1>
+  <section class="wallet-summary card">
+    <span class="metric__label">Saldo disponible</span>
+    <% if (balance) { %>
+      <strong class="metric__value"><%= helpers.formatCop(balance.availableMinor) %></strong>
+      <span class="muted">Reservado <%= helpers.formatCop(balance.reservedMinor) %> · Total <%= helpers.formatCop(balance.totalMinor) %></span>
+      <% if (balance.blocked) { %>
+        <span class="badge badge--danger">Operaciones temporalmente bloqueadas</span>
+      <% } %>
+    <% } else { %>
+      <%- await include('partials/skeleton') %>
+    <% } %>
+    <div class="actions">
+      <a class="btn btn--primary" href="/orders/new">Emitir bonos</a>
+      <a class="btn btn--secondary" href="/wallet">Ver movimientos</a>
+    </div>
+  </section>
+  <section class="card">
+    <div class="card__head">
+      <h2 class="card__title">Últimas órdenes</h2>
+      <a class="btn btn--ghost" href="/orders">Historial</a>
+    </div>
+    <%- await include('partials/order-list', { orders: recentOrders }) %>
+  </section>
+<% } %>

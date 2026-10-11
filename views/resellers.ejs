@@ -1,0 +1,77 @@
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Revendedores</h1>
+    <p class="muted">Crea un revendedor con su acceso y administra los que ya existen.</p>
+  </div>
+</div>
+
+<div class="split">
+  <section class="card">
+    <h2 class="card__title">Alta rápida</h2>
+    <form method="post" action="/admin/resellers" class="form">
+      <input type="hidden" name="csrfToken" value="<%= csrfToken %>" />
+      <div class="field">
+        <label for="name">Nombre</label>
+        <input id="name" name="name" type="text" required maxlength="120" value="<%= form && form.name ? form.name : '' %>" />
+      </div>
+      <div class="field">
+        <label for="email">Email de acceso</label>
+        <input id="email" name="email" type="email" required maxlength="254" autocomplete="off" value="<%= form && form.email ? form.email : '' %>" />
+      </div>
+      <div class="field">
+        <label for="password">Contraseña inicial</label>
+        <div class="field__control">
+          <input id="password" name="password" type="password" required minlength="12" autocomplete="new-password" />
+          <button type="button" class="btn btn--ghost field__toggle" data-toggle-password aria-controls="password" aria-pressed="false">Mostrar</button>
+        </div>
+        <p class="muted small">Mínimo 12 caracteres.</p>
+      </div>
+      <details class="advanced">
+        <summary>Opciones avanzadas</summary>
+        <div class="field">
+          <label for="lowBalanceThresholdMinor">Avisar cuando el saldo baje de (COP)</label>
+          <input id="lowBalanceThresholdMinor" name="lowBalanceThresholdMinor" type="number" min="0" step="1" inputmode="numeric" value="<%= form && form.lowBalanceThresholdMinor !== undefined ? form.lowBalanceThresholdMinor : 0 %>" />
+        </div>
+      </details>
+      <button type="submit" class="btn btn--primary" data-loading><span class="btn__label">Crear revendedor</span></button>
+    </form>
+    <p class="muted small">El acceso queda activo de inmediato. La contraseña no vuelve a mostrarse; compártela por un canal seguro.</p>
+  </section>
+
+  <section class="card">
+    <div class="card__head">
+      <h2 class="card__title">Revendedores <span class="count"><%= resellers.length %></span></h2>
+      <form method="get" action="/admin/resellers" class="form form--inline">
+        <div class="field">
+          <label for="status">Estado</label>
+          <select id="status" name="status" data-auto-submit>
+            <option value="">Todos</option>
+            <% statuses.forEach(function (item) { %>
+              <option value="<%= item %>" <%= status === item ? 'selected' : '' %>><%= helpers.statusLabel(item) %></option>
+            <% }); %>
+          </select>
+        </div>
+        <noscript><button type="submit" class="btn btn--secondary">Filtrar</button></noscript>
+      </form>
+    </div>
+    <% if (resellers.length === 0) { %>
+      <p class="empty muted">Aún no hay revendedores. Crea el primero con el formulario de alta.</p>
+    <% } else { %>
+      <ul class="reseller-list">
+        <% resellers.forEach(function (reseller) { %>
+          <li class="reseller-row">
+            <div class="reseller-row__head">
+              <span class="reseller-row__name"><%= reseller.name %></span>
+              <span class="badge <%= helpers.badgeClass(reseller.status) %>"><%= helpers.statusLabel(reseller.status) %></span>
+            </div>
+            <div class="reseller-row__meta">
+              <% if (reseller.primary_email) { %><span><%= reseller.primary_email %></span><% } %>
+              <% if (Number(reseller.low_balance_threshold_minor) > 0) { %><span>Aviso: saldo bajo <%= helpers.formatCop(reseller.low_balance_threshold_minor) %></span><% } %>
+            </div>
+            <a class="btn btn--secondary reseller-row__cta" href="/admin/resellers/<%= reseller.id %>" aria-label="Gestionar a <%= reseller.name %>">Gestionar</a>
+          </li>
+        <% }); %>
+      </ul>
+    <% } %>
+  </section>
+</div>

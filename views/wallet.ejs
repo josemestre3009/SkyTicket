@@ -1,0 +1,143 @@
+<div class="page-head">
+  <div>
+    <h1 class="page-title"><%= reseller ? 'Saldo de ' + reseller.name : 'Saldo y movimientos' %></h1>
+    <% if (reseller) { %><p class="muted">Agrega saldo y consulta sus movimientos.</p><% } %>
+  </div>
+</div>
+
+<% if (needReseller) { %>
+  <section class="card">
+    <h2 class="card__title">Selecciona un revendedor</h2>
+    <form method="get" action="/wallet" class="form form--inline">
+      <div class="field">
+        <label for="resellerId">Revendedor</label>
+        <select id="resellerId" name="resellerId" required data-auto-submit>
+          <option value="">Selecciona</option>
+          <% resellers.forEach(function (item) { %>
+            <option value="<%= item.id %>"><%= item.name %></option>
+          <% }); %>
+        </select>
+      </div>
+      <button type="submit" class="btn btn--secondary">Ver</button>
+    </form>
+  </section>
+<% } else { %>
+  <section class="wallet-summary card">
+    <span class="metric__label">Disponible</span>
+    <strong class="metric__value"><%= balance ? helpers.formatCop(balance.availableMinor) : '—' %></strong>
+    <% if (balance) { %>
+      <span class="muted">Reservado <%= helpers.formatCop(balance.reservedMinor) %> · Total <%= helpers.formatCop(balance.totalMinor) %></span>
+      <% if (balance.blocked) { %><span class="badge badge--danger">Operaciones temporalmente bloqueadas</span><% } %>
+    <% } %>
+  </section>
+
+  <% if (role === 'admin') { %>
+    <div class="grid-2">
+      <section class="card" id="agregar-saldo">
+        <h2 class="card__title">Agregar saldo</h2>
+        <form method="post" action="/wallet/recharge" class="form">
+          <input type="hidden" name="csrfToken" value="<%= csrfToken %>" />
+          <input type="hidden" name="resellerId" value="<%= resellerId %>" />
+          <input type="hidden" name="idempotencyKey" value="<%= form && form.idempotencyKey ? form.idempotencyKey : '' %>" />
+          <div class="field">
+            <label for="recharge-amount">Saldo a agregar (COP)</label>
+            <input id="recharge-amount" name="amountMinor" type="number" min="1" step="1" required inputmode="numeric"
+                   value="<%= form && form.amountMinor ? form.amountMinor : '' %>" />
+          </div>
+          <div class="field">
+            <label for="recharge-ref">Referencia</label>
+            <input id="recharge-ref" name="reference" type="text" maxlength="120" />
+          </div>
+          <div class="field">
+            <label for="recharge-reason">Motivo</label>
+            <input id="recharge-reason" name="reason" type="text" required maxlength="200"
+                   value="<%= form && form.reason ? form.reason : '' %>" />
+          </div>
+          <button type="submit" class="btn btn--primary" data-loading><span class="btn__label">Agregar saldo</span></button>
+        </form>
+      </section>
+      <section class="card">
+        <h2 class="card__title">Ajuste</h2>
+        <form method="post" action="/wallet/adjustment" class="form">
+          <input type="hidden" name="csrfToken" value="<%= csrfToken %>" />
+          <input type="hidden" name="resellerId" value="<%= resellerId %>" />
+          <input type="hidden" name="idempotencyKey" value="<%= form && form.idempotencyKey ? form.idempotencyKey : '' %>" />
+          <div class="field">
+            <label for="adj-direction">Dirección</label>
+            <select id="adj-direction" name="direction" required>
+              <option value="credit">Crédito</option>
+              <option value="debit">Débito</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="adj-amount">Monto COP</label>
+            <input id="adj-amount" name="amountMinor" type="number" min="1" step="1" required inputmode="numeric" />
+          </div>
+          <div class="field">
+            <label for="adj-reason">Motivo</label>
+            <input id="adj-reason" name="reason" type="text" required maxlength="200" />
+          </div>
+          <div class="field">
+            <label for="adj-evidence">Evidencia (opcional)</label>
+            <input id="adj-evidence" name="evidence" type="text" maxlength="200" />
+          </div>
+          <button type="submit" class="btn btn--secondary" data-loading><span class="btn__label">Aplicar ajuste</span></button>
+        </form>
+      </section>
+    </div>
+  <% } %>
+
+  <section class="card">
+    <h2 class="card__title">Movimientos</h2>
+    <% if (movements.length === 0) { %>
+      <p class="empty muted">Sin movimientos.</p>
+    <% } else { %>
+      <ul class="movement-list">
+        <% movements.forEach(function (movement) { %>
+          <li class="movement-list__item">
+            <div class="movement-list__main">
+              <span class="badge <%= helpers.badgeClass(movement.type) %>"><%= helpers.domainLabel(movement.type) %></span>
+              <strong><%= helpers.formatCop(movement.amountMinor) %></strong>
+              <span class="muted delta<%= movement.availableDelta < 0 ? ' delta--neg' : '' %>">
+                disp. <%= movement.availableDelta >= 0 ? '+' : '' %><%= helpers.formatCop(movement.availableDelta) %>
+              </span>
+            </div>
+            <div class="movement-list__meta muted">
+              <span><%= movement.reference || '—' %></span>
+              <% if (movement.reason) { %><span><%= movement.reason %></span><% } %>
+              <time datetime="<%= movement.effectiveAt %>"><%= helpers.formatDateTime(movement.effectiveAt) %></time>
+            </div>
+            <% if (role === 'admin' && movement.reversible) { %>
+              <form method="post" action="/wallet/reverse" class="inline-form" data-confirm="Registrar reverso?">
+                <input type="hidden" name="csrfToken" value="<%= csrfToken %>" />
+                <input type="hidden" name="resellerId" value="<%= resellerId %>" />
+                <input type="hidden" name="entryId" value="<%= movement.id %>" />
+                <button type="submit" class="btn btn--ghost">Reversar</button>
+              </form>
+            <% } %>
+          </li>
+        <% }); %>
+      </ul>
+    <% } %>
+  </section>
+
+  <% if (holds.length > 0) { %>
+    <section class="card">
+      <h2 class="card__title">Reservas activas</h2>
+      <ul class="movement-list">
+        <% holds.forEach(function (hold) { %>
+          <li class="movement-list__item">
+            <div class="movement-list__main">
+              <span class="badge <%= helpers.badgeClass(hold.status) %>"><%= helpers.domainLabel(hold.status) %></span>
+              <strong><%= helpers.formatCop(hold.amountMinor) %></strong>
+            </div>
+            <div class="movement-list__meta muted">
+              <span>Orden <%= hold.orderId || '—' %></span>
+              <time datetime="<%= hold.createdAt %>"><%= helpers.formatDateTime(hold.createdAt) %></time>
+            </div>
+          </li>
+        <% }); %>
+      </ul>
+    </section>
+  <% } %>
+<% } %>

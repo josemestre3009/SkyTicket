@@ -1,0 +1,8 @@
+<section class="card error-page">
+  <h1 class="page-title"><%= status %></h1>
+  <p class="muted"><%= message %></p>
+  <% if (typeof code !== 'undefined' && code) { %><p class="muted small">Código: <code><%= code %></code></p><% } %>
+  <div class="actions">
+    <a class="btn btn--primary" href="<%= user ? '/dashboard' : '/login' %>"><%= user ? 'Volver al panel' : 'Iniciar sesión' %></a>
+  </div>
+</section>

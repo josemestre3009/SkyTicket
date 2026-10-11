@@ -1,0 +1,42 @@
+<h1 class="page-title">Auditoría</h1>
+
+<section class="card">
+  <div class="card__head">
+    <h2 class="card__title">Eventos</h2>
+    <form method="get" action="/admin/audit" class="form form--inline">
+      <div class="field">
+        <label for="action">Acción</label>
+        <input id="action" name="action" type="text" maxlength="80" value="<%= action || '' %>" />
+      </div>
+      <div class="field">
+        <label for="entityType">Entidad</label>
+        <input id="entityType" name="entityType" type="text" maxlength="80" value="<%= entityType || '' %>" />
+      </div>
+      <button type="submit" class="btn btn--secondary">Filtrar</button>
+    </form>
+  </div>
+
+  <% if (!available) { %>
+    <p class="empty muted">La auditoría no está disponible en esta instancia.</p>
+  <% } else if (events.length === 0) { %>
+    <p class="empty muted">Sin eventos para este filtro.</p>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="table" data-responsive>
+        <caption class="sr-only">Eventos de auditoría</caption>
+        <thead><tr><th scope="col">Acción</th><th scope="col">Actor</th><th scope="col">Entidad</th><th scope="col">Resultado</th><th scope="col">Fecha</th></tr></thead>
+        <tbody>
+          <% events.forEach(function (event) { %>
+            <tr>
+              <td data-label="Acción"><code><%= event.action %></code><% if (event.reason) { %><span class="muted small"> · <%= event.reason %></span><% } %></td>
+              <td data-label="Actor"><%= event.actorRole ? helpers.domainLabel(event.actorRole) : '—' %></td>
+              <td data-label="Entidad"><%= helpers.domainLabel(event.entityType) %><% if (event.entityId) { %> <span class="muted small"><%= event.entityId %></span><% } %></td>
+              <td data-label="Resultado"><span class="badge <%= helpers.badgeClass(event.result) %>"><%= helpers.domainLabel(event.result) %></span></td>
+              <td data-label="Fecha"><%= helpers.formatDateTime(event.createdAt) %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</section>

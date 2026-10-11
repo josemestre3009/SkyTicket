@@ -1,0 +1,11 @@
+<h1 class="page-title">Configuración</h1>
+
+<section class="card">
+  <h2 class="card__title">Ajustes operativos</h2>
+  <dl class="detail-list">
+    <% settings.forEach(function (item) { %>
+      <div><dt><%= item.label %></dt><dd><%= item.value %></dd></div>
+    <% }); %>
+  </dl>
+  <p class="muted small">Los valores sensibles nunca se muestran; solo se indica si están configurados.</p>
+</section>

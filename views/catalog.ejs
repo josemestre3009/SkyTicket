@@ -1,0 +1,131 @@
+<% if (variant === 'admin') { %>
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Catálogo y precios</h1>
+      <p class="muted">Elige un revendedor y un sitio para autorizar paquetes y fijar sus precios.</p>
+    </div>
+    <% if (syncAvailable) { %>
+      <form method="post" action="/catalog/sync" class="inline-form">
+        <input type="hidden" name="csrfToken" value="<%= csrfToken %>" />
+        <button type="submit" class="btn btn--secondary" data-loading><span class="btn__label">Sincronizar</span></button>
+      </form>
+    <% } %>
+  </div>
+
+  <section class="context-bar" aria-label="Contexto">
+    <form method="get" action="/catalog" class="form form--inline">
+      <div class="field">
+        <label for="resellerId">Revendedor</label>
+        <select id="resellerId" name="resellerId" data-auto-submit>
+          <option value="">Selecciona un revendedor</option>
+          <% resellers.forEach(function (item) { %>
+            <option value="<%= item.id %>" <%= resellerId === item.id ? 'selected' : '' %>><%= item.name %></option>
+          <% }); %>
+        </select>
+      </div>
+      <% if (sites.length > 0) { %>
+        <div class="field">
+          <label for="siteId">Sitio</label>
+          <select id="siteId" name="siteId" data-auto-submit>
+            <option value="">Selecciona un sitio</option>
+            <% sites.forEach(function (site) { %>
+              <option value="<%= site.id %>" <%= siteId === site.id ? 'selected' : '' %>><%= site.name %></option>
+            <% }); %>
+          </select>
+        </div>
+      <% } %>
+      <noscript><button type="submit" class="btn btn--secondary">Cargar</button></noscript>
+    </form>
+  </section>
+
+  <% if (!hasContext) { %>
+    <section class="card empty-state">
+      <h2 class="card__title">Selecciona un revendedor y un sitio</h2>
+      <p class="muted">Empieza eligiendo un revendedor; después verás sus sitios asignados. Con ambos elegidos aparecerán sus paquetes para autorizar y poner precio.</p>
+    </section>
+  <% } else if (packages.length === 0) { %>
+    <section class="card empty-state">
+      <h2 class="card__title">Sin paquetes en este sitio</h2>
+      <p class="muted">Este sitio aún no tiene paquetes sincronizados. Usa <strong>Sincronizar</strong> para leerlos desde Ruijie.</p>
+    </section>
+  <% } else { %>
+    <section class="card">
+      <h2 class="card__title">Paquetes del sitio</h2>
+      <ul class="package-rows">
+        <% packages.forEach(function (pkg) { %>
+          <li class="package-row">
+            <div class="package-row__head">
+              <span class="package-row__name"><%= pkg.name %></span>
+              <% if (pkg.authorized) { %>
+                <span class="badge badge--ok">Autorizado</span>
+              <% } else { %>
+                <span class="badge badge--neutral">No autorizado</span>
+              <% } %>
+            </div>
+            <dl class="package-row__specs">
+              <div><dt>Duración</dt><dd><%= pkg.duration ?? '—' %></dd></div>
+              <div><dt>Cuota</dt><dd><%= pkg.quota ?? '—' %></dd></div>
+              <div><dt>Precio</dt><dd><%= pkg.price ? helpers.formatCop(pkg.price.amountMinor) : 'Sin precio' %></dd></div>
+            </dl>
+            <div class="package-row__actions">
+              <% if (pkg.authorized) { %>
+                <form method="post" action="/catalog/prices" class="inline-form package-row__price">
+                  <input type="hidden" name="csrfToken" value="<%= csrfToken %>" />
+                  <input type="hidden" name="resellerId" value="<%= resellerId %>" />
+                  <input type="hidden" name="siteId" value="<%= siteId %>" />
+                  <input type="hidden" name="packageId" value="<%= pkg.id %>" />
+                  <input type="hidden" name="scope" value="reseller_site" />
+                  <label class="sr-only" for="price-<%= pkg.id %>">Precio en COP</label>
+                  <input id="price-<%= pkg.id %>" name="amountMinor" type="number" min="0" step="1" inputmode="numeric" required value="<%= pkg.price ? pkg.price.amountMinor : '' %>" />
+                  <button type="submit" class="btn btn--secondary" data-loading aria-label="Guardar precio de <%= pkg.name %>"><span class="btn__label">Guardar precio</span></button>
+                </form>
+                <form method="post" action="/catalog/permissions/revoke" class="inline-form" data-confirm="¿Retirar el permiso?">
+                  <input type="hidden" name="csrfToken" value="<%= csrfToken %>" />
+                   <input type="hidden" name="resellerId" value="<%= resellerId %>" />
+                   <input type="hidden" name="siteId" value="<%= siteId %>" />
+                   <input type="hidden" name="packageId" value="<%= pkg.id %>" />
+                  <button type="submit" class="btn btn--danger" aria-label="Retirar autorización de <%= pkg.name %>">Retirar</button>
+                </form>
+              <% } else { %>
+                <form method="post" action="/catalog/permissions" class="inline-form">
+                  <input type="hidden" name="csrfToken" value="<%= csrfToken %>" />
+                   <input type="hidden" name="resellerId" value="<%= resellerId %>" />
+                   <input type="hidden" name="siteId" value="<%= siteId %>" />
+                   <input type="hidden" name="packageId" value="<%= pkg.id %>" />
+                  <button type="submit" class="btn btn--secondary" data-loading aria-label="Autorizar paquete <%= pkg.name %>"><span class="btn__label">Autorizar</span></button>
+                </form>
+              <% } %>
+            </div>
+          </li>
+        <% }); %>
+      </ul>
+    </section>
+  <% } %>
+<% } else { %>
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Catálogo</h1>
+      <p class="muted">Paquetes autorizados con su precio para emitir bonos.</p>
+    </div>
+  </div>
+  <% if (packages.length === 0) { %>
+    <p class="empty muted">Aún no tienes paquetes disponibles. Pídele al administrador que autorice tu catálogo.</p>
+  <% } else { %>
+    <ul class="package-grid">
+      <% packages.forEach(function (pkg) { %>
+        <li class="package card">
+          <h2 class="package__name"><%= pkg.name %></h2>
+          <% if (pkg.price) { %>
+            <p class="package__price"><%= helpers.formatCop(pkg.price.amountMinor) %></p>
+          <% } %>
+          <dl class="package__specs">
+            <div><dt>Duración</dt><dd><%= pkg.duration ?? '—' %></dd></div>
+            <div><dt>Cuota</dt><dd><%= pkg.quota ?? '—' %></dd></div>
+            <div><dt>Dispositivos</dt><dd><%= pkg.concurrentClients ?? '—' %></dd></div>
+          </dl>
+          <a class="btn btn--primary" href="/orders/new?packageId=<%= pkg.id %>&siteId=<%= pkg.siteId %>">Emitir</a>
+        </li>
+      <% }); %>
+    </ul>
+  <% } %>
+<% } %>

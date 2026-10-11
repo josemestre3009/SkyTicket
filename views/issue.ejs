@@ -1,0 +1,68 @@
+<h1 class="page-title">Emitir bonos</h1>
+
+<form method="post" action="/orders" class="form" id="issue-form">
+  <input type="hidden" name="csrfToken" value="<%= csrfToken %>" />
+  <input type="hidden" name="localReference" value="<%= localReference %>" />
+
+  <section class="card">
+    <h2 class="card__title">1. Sitio</h2>
+    <div class="field">
+      <label for="siteId">Sitio autorizado</label>
+      <select id="siteId" name="siteId" required data-issue-site>
+        <option value="">Selecciona un sitio</option>
+        <% sites.forEach(function (site) { %>
+          <option value="<%= site.id %>" <%= form.siteId === site.id ? 'selected' : '' %>><%= site.name %></option>
+        <% }); %>
+      </select>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 class="card__title">2. Paquete</h2>
+    <% if (packages.length === 0) { %>
+      <p class="empty muted">No hay paquetes autorizados vigentes.</p>
+    <% } else { %>
+      <fieldset class="fieldset">
+        <legend class="sr-only">Paquete</legend>
+        <ul class="package-choices">
+          <% packages.forEach(function (pkg) { %>
+            <li class="package-choice" data-package-site="<%= pkg.siteId %>">
+              <label class="package-choice__label">
+                <input type="radio" name="packageId" value="<%= pkg.id %>" data-site="<%= pkg.siteId %>"
+                       <%= form.packageId === pkg.id ? 'checked' : '' %> required />
+                <span class="package-choice__body">
+                  <span class="package-choice__name"><%= pkg.name %></span>
+                  <span class="package-choice__specs muted">
+                    <%= pkg.duration ?? '—' %> · <%= pkg.quota ?? '—' %> · <%= pkg.concurrentClients ?? '—' %> disp.
+                  </span>
+                </span>
+              </label>
+            </li>
+          <% }); %>
+        </ul>
+        <p class="empty muted" data-package-empty hidden>No hay paquetes disponibles para este sitio.</p>
+      </fieldset>
+    <% } %>
+  </section>
+
+  <section class="card">
+    <h2 class="card__title">3. Cantidad</h2>
+    <div class="field">
+      <label for="quantity">Bonos (1 a 100)</label>
+      <input id="quantity" name="quantity" type="number" min="1" max="100" step="1" required inputmode="numeric"
+             value="<%= form.quantity %>" />
+    </div>
+    <div class="field">
+      <label for="clientReference">Referencia del cliente (opcional)</label>
+      <input id="clientReference" name="clientReference" type="text" maxlength="120"
+             value="<%= form.clientReference %>" />
+    </div>
+  </section>
+
+  <div class="actions actions--sticky">
+    <button type="submit" class="btn btn--primary btn--block" data-loading <%= packages.length === 0 ? 'disabled' : '' %>>
+      <span class="btn__label">Crear orden</span>
+    </button>
+  </div>
+  <p class="muted small">La emisión se completa tras reservar y confirmar con Ruijie. Estamos verificando el resultado. No vuelvas a intentarlo.</p>
+</form>

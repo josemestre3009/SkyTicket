@@ -1,0 +1,29 @@
+<h1 class="page-title">Órdenes y bonos</h1>
+
+<section class="card">
+  <div class="card__head">
+    <h2 class="card__title">Listado administrativo</h2>
+    <form method="get" action="/admin/orders" class="form form--inline">
+      <div class="field">
+        <label for="resellerId">Revendedor</label>
+        <select id="resellerId" name="resellerId" data-auto-submit>
+          <option value="">Todos</option>
+          <% resellers.forEach(function (item) { %>
+            <option value="<%= item.id %>" <%= resellerId === item.id ? 'selected' : '' %>><%= item.name %></option>
+          <% }); %>
+        </select>
+      </div>
+      <div class="field">
+        <label for="status">Estado</label>
+        <select id="status" name="status" data-auto-submit>
+          <option value="">Todos</option>
+          <% statuses.forEach(function (item) { %>
+            <option value="<%= item %>" <%= status === item ? 'selected' : '' %>><%= helpers.domainLabel(item) %></option>
+          <% }); %>
+        </select>
+      </div>
+      <button type="submit" class="btn btn--secondary">Filtrar</button>
+    </form>
+  </div>
+  <%- await include('partials/order-list', { orders: orders }) %>
+</section>

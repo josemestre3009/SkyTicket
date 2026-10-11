@@ -1,0 +1,77 @@
+name: skyticket
+
+x-app: &app
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: skyticket/app:local
+  env_file:
+    - .env
+  environment:
+    NODE_ENV: production
+    DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-skyticket}:${POSTGRES_PASSWORD:-skyticket}@db:5432/${POSTGRES_DB:-skyticket}}
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-skyticket}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-skyticket}
+      POSTGRES_DB: ${POSTGRES_DB:-skyticket}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-skyticket} -d ${POSTGRES_DB:-skyticket}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  migrate:
+    <<: *app
+    command: ["node", "src/db/migrate.js"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  web:
+    <<: *app
+    command: ["node", "src/server.js"]
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-skyticket}:${POSTGRES_PASSWORD:-skyticket}@db:5432/${POSTGRES_DB:-skyticket}}
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    restart: unless-stopped
+
+  worker:
+    <<: *app
+    command: ["node", "src/worker.js"]
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  db_data:
+    name: skyticket_db_data

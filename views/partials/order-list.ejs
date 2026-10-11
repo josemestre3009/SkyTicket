@@ -1,0 +1,20 @@
+<% if (!orders || orders.length === 0) { %>
+  <p class="empty muted">Sin órdenes para mostrar.</p>
+<% } else { %>
+  <ul class="order-list">
+    <% orders.forEach(function (order) { %>
+      <li class="order-list__item">
+        <a class="order-list__link" href="/orders/<%= order.id %>">
+          <div class="order-list__main">
+            <span class="badge <%= helpers.badgeClass(order.status) %>"><%= helpers.domainLabel(order.status) %></span>
+            <span class="order-list__qty"><%= order.quantity %> bono(s)</span>
+          </div>
+          <div class="order-list__meta muted">
+            <span><%= helpers.formatCop(order.totalMinor) %></span>
+            <time datetime="<%= order.createdAt %>"><%= helpers.formatDateTime(order.createdAt) %></time>
+          </div>
+        </a>
+      </li>
+    <% }); %>
+  </ul>
+<% } %>

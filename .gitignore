@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+
+node_modules/
+coverage/
+.nyc_output/
+npm-debug.log*
+npm-*.log
+
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+tmp/
+.docker/

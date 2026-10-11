@@ -1,0 +1,88 @@
+<h1 class="page-title">Bonos Ruijie</h1>
+
+<section class="card">
+  <div class="card__head">
+    <h2 class="card__title">Inventario remoto (solo lectura)</h2>
+    <form method="post" action="/admin/vouchers/sync-sites" class="inline-form">
+      <input type="hidden" name="csrfToken" value="<%= csrfToken %>" />
+      <button type="submit" class="btn btn--secondary" data-loading><span class="btn__label">Sincronizar sitios</span></button>
+    </form>
+  </div>
+  <p class="muted small">Consulta los bonos existentes en Ruijie. Los códigos se muestran enmascarados y nunca se crean bonos desde el panel.</p>
+
+  <% if (!readEnabled) { %>
+    <div class="alert alert--warn">La lectura de Ruijie está deshabilitada. Configura las credenciales para consultar bonos.</div>
+  <% } %>
+
+  <% if (!sites || sites.length === 0) { %>
+    <div class="alert alert--warn">No hay sitios sincronizados. Usa «Sincronizar sitios» para descubrirlos antes de consultar bonos.</div>
+  <% } else { %>
+    <form method="get" action="/admin/vouchers" class="form form--inline">
+      <div class="field">
+        <label for="siteId">Sitio</label>
+        <select id="siteId" name="siteId" data-auto-submit required>
+          <option value="">Selecciona un sitio</option>
+          <% sites.forEach(function (site) { %>
+            <option value="<%= site.id %>" <%= siteId === site.id ? 'selected' : '' %>><%= site.name %></option>
+          <% }); %>
+        </select>
+      </div>
+      <button type="submit" class="btn btn--secondary">Consultar</button>
+    </form>
+  <% } %>
+</section>
+
+<% if (error) { %>
+  <div class="alert alert--error"><%= error %></div>
+<% } %>
+
+<% if (result) { %>
+  <section class="card">
+    <h2 class="card__title">Resumen</h2>
+    <div class="metrics">
+      <div class="metric"><span class="metric__label">Total</span><span class="metric__value"><%= result.summary.total %></span></div>
+      <div class="metric"><span class="metric__label">Disponibles</span><span class="metric__value"><%= result.summary.unused %></span></div>
+      <div class="metric"><span class="metric__label">En uso</span><span class="metric__value"><%= result.summary.in_use %></span></div>
+      <div class="metric"><span class="metric__label">Vencidos</span><span class="metric__value"><%= result.summary.expired %></span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 class="card__title">Bonos</h2>
+    <% if (result.vouchers.length === 0) { %>
+      <p class="empty muted">Sin bonos en este sitio.</p>
+    <% } else { %>
+      <div class="table-wrap">
+        <table class="table" data-responsive>
+          <caption class="sr-only">Bonos Ruijie</caption>
+          <thead>
+            <tr>
+              <th scope="col">UUID</th>
+              <th scope="col">Código</th>
+              <th scope="col">Alias</th>
+              <th scope="col">Paquete</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Expira</th>
+              <th scope="col">Creado</th>
+              <th scope="col">Clientes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% result.vouchers.forEach(function (v) { %>
+              <tr>
+                <td data-label="UUID"><code><%= v.uuid %></code></td>
+                <td data-label="Código"><code class="code-block"><%= v.codeMasked %></code></td>
+                <td data-label="Alias"><%= v.alias || '—' %></td>
+                <td data-label="Paquete"><%= v.packageName || '—' %></td>
+                <td data-label="Estado"><span class="badge <%= helpers.badgeClass(v.status) %>"><%= helpers.voucherStatusLabel(v.status) %></span></td>
+                <td data-label="Expira"><%= helpers.formatDateTime(v.expiryTime) %></td>
+                <td data-label="Creado"><%= helpers.formatDateTime(v.createTime) %></td>
+                <td data-label="Clientes"><%= v.currentClients === null || v.currentClients === undefined ? '—' : v.currentClients %> / <%= v.maxClients === null || v.maxClients === undefined ? '—' : v.maxClients %></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </section>
+<% } %>
